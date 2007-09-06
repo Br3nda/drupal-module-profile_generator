@@ -95,8 +95,8 @@ function profile_generator_form($form_values = null) {
         '#collapsed' => TRUE,
     );
     $query_result = db_query('SELECT * FROM {node_type}');
-    while ( $nodetype = db_fetch_object($query_result) ) {
-        if ( $nodetype->custom ) {
+    while ($nodetype = db_fetch_object($query_result)) {
+        if ($nodetype->custom) {
             $form['nodes']['node_' . $nodetype->type] = array(
                 '#type' => 'checkbox',
                 '#title' => $nodetype->name,
@@ -166,19 +166,19 @@ function profile_generator_form_submit($form_name, $form_values) {
     $code .= "*                          VARIABLES                        *\n";
     $code .= "************************************************************/\n";
     while ($variable = db_fetch_object($query_result)) {
-        if ( in_array($variable->name, array('install_profile', 'drupal_private_key', 'cron_last', 'content_schema_version')) ) {
+        if (in_array($variable->name, array('install_profile', 'drupal_private_key', 'cron_last', 'content_schema_version'))) {
             continue;
         }
         $value = profile_generator_serialize(variable_get($variable->name, null), 4);
-        switch($variable->name) {
+        switch ($variable->name) {
             case 'theme_default':
                 $code .= "    system_theme_data();\n";
-                $code .= "    db_query(\"UPDATE {system} SET status = 1 WHERE type = 'theme' and name = '%s'\", " . $value . ");\n";
-                $postcode .= "    system_initialize_theme_blocks(" . $value . ");\n";
-                $code .= "    variable_set(" . var_export($variable->name, true) . ", " . $value . ");\n";
+                $code .= "    db_query(\"UPDATE {system} SET status = 1 WHERE type = 'theme' and name = '%s'\", ". $value .");\n";
+                $postcode .= "    system_initialize_theme_blocks(". $value .");\n";
+                $code .= "    variable_set(". var_export($variable->name, true) .", ". $value .");\n";
                 break;
             default:
-                $code .= "    variable_set(" . var_export($variable->name, true) . ", " . $value . ");\n";
+                $code .= "    variable_set(". var_export($variable->name, true) .", ". $value .");\n";
                 break;
         }
     }
@@ -186,26 +186,26 @@ function profile_generator_form_submit($form_name, $form_values) {
     $code .= "\n";
 
     // node types
-    if ( $form_values['export_nodetypes'] ) {
+    if ($form_values['export_nodetypes']) {
         $code .= "/************************************************************\n";
         $code .= "*                         NODE TYPES                        *\n";
         $code .= "************************************************************/\n";
         $query_result = db_query('SELECT * FROM {node_type} WHERE custom = 1');
         $fields = array('type', 'name', 'module', 'description', 'help', 'has_title', 'title_label', 'has_body', 'body_label', 'min_word_count', 'custom', 'modified', 'locked', 'orig_type');
-        while ( $nodetype = db_fetch_object($query_result) ) {
-            $code .= "    db_query(\"INSERT INTO {node_type} (" . join(',',$fields) . ")\n";
-            $code .= "               VALUES (" . join(',',array_pad(array(), count($fields), "'%s'")) . ")\",\n";
-            foreach ( $fields as $field ) {
+        while ($nodetype = db_fetch_object($query_result)) {
+            $code .= '    db_query("INSERT INTO {node_type} ('. join(', ', $fields) .")\n";
+            $code .= '               VALUES ('. join(', ', array_pad(array(), count($fields), "'%s'")) .")\",\n";
+            foreach ($fields as $field) {
                 $params[] = profile_generator_serialize($nodetype->$field);
             }
-            $code .= "        " . join(',', $params) . "\n";
-            $code .= "    );";
+            $code .= '        '. join(',', $params) ."\n";
+            $code .= '    );';
         }
         $code .= "\n";
     }
 
     // roles
-    if ( $form_values['export_roles'] ) {
+    if ($form_values['export_roles']) {
         $code .= "/************************************************************\n";
         $code .= "*                            ROLES                          *\n";
         $code .= "************************************************************/\n";
@@ -214,61 +214,61 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= "    \$role_id['authenticated user'] = 2;\n";
 
         $query_result = db_query('SELECT * FROM {role} INNER JOIN {permission} ON {role}.rid = {permission}.rid WHERE {role}.rid > 2 ORDER BY {role}.rid');
-        while ( $role = db_fetch_object($query_result) ) {
+        while ($role = db_fetch_object($query_result)) {
             $code .= "    \$rid = db_next_id('{role}_rid');\n";
-            $code .= "    \$role_id[" . var_export($role->name, true) . "] = \$rid;\n";
-            $code .= "    db_query(\"INSERT INTO {role} (rid,name) VALUES (%d, '%s')\", \$rid, " . var_export($role->name,true) . ");\n";
-            $code .= "    db_query(\"INSERT INTO {permission} (rid,perm) VALUES (%d, '%s')\", \$rid, " . var_export($role->perm, true) . ");\n";
+            $code .= "    \$role_id[". var_export($role->name, true) ."] = \$rid;\n";
+            $code .= "    db_query(\"INSERT INTO {role} (rid, name) VALUES (%d, '%s')\", \$rid, ". var_export($role->name, true) .");\n";
+            $code .= "    db_query(\"INSERT INTO {permission} (rid, perm) VALUES (%d, '%s')\", \$rid, ". var_export($role->perm, true) . ");\n";
         }
         
         $code .= "\n";
     }
 
     // users
-    if ( $form_values['export_users'] ) {
+    if ($form_values['export_users']) {
         $code .= "/************************************************************\n";
         $code .= "*                            USERS                          *\n";
         $code .= "************************************************************/\n";
         $query_result = db_query('SELECT * FROM {users} WHERE uid>0 ORDER BY uid');
-        while ( $user = db_fetch_object($query_result) ) {
+        while ($user = db_fetch_object($query_result)) {
             $pass = $user->pass;
             unset($user->uid);
             unset($user->pass);
             $code .= "    \$user = user_save(new stdClass(), ";
             $code .= profile_generator_serialize((array)$user, 6);
             $code .= ");\n";
-            $code .= "    db_query(\"UPDATE {users} SET pass='%s' WHERE uid=%d\", " . profile_generator_serialize($pass) . ", \$user->uid);\n";
-            $code .= "    \$user_id[" . var_export($user->name,true) . "] = \$user->uid;\n";
+            $code .= "    db_query(\"UPDATE {users} SET pass='%s' WHERE uid=%d\", ". profile_generator_serialize($pass) . ", \$user->uid);\n";
+            $code .= "    \$user_id[". var_export($user->name, true) ."] = \$user->uid;\n";
         }
         $code .= "\n";
     }
 
-    if ( $form_values['export_users'] && $form_values['export_roles'] ) {
+    if ($form_values['export_users'] && $form_values['export_roles']) {
         $code .= "/************************************************************\n";
         $code .= "*                   USERS <=> ROLES MAPPING                 *\n";
         $code .= "************************************************************/\n";
         $query_result = db_query('SELECT {users}.name AS user, {role}.name AS role FROM {users} INNER JOIN {users_roles} ON {users}.uid={users_roles}.uid INNER JOIN {role} ON {role}.rid={users_roles}.rid;');
-        while ( $role = db_fetch_object($query_result) ) {
-            $code .= "    db_query(\"INSERT INTO {users_roles} (uid, rid) VALUES (%d,%d)\", \$user_id[" . var_export($role->user,true) . "], \$role_id[" . var_export($role->role,true) . "]);\n";
+        while ($role = db_fetch_object($query_result)) {
+            $code .= "    db_query(\"INSERT INTO {users_roles} (uid, rid) VALUES (%d, %d)\", \$user_id[". var_export($role->user, true) ."], \$role_id[". var_export($role->role, true) ."]);\n";
         }
         $code .= "\n";
     }
 
-    if ( $form_values['export_menus'] ) {
+    if ($form_values['export_menus']) {
         $code .= "/************************************************************\n";
         $code .= "*                            MENUS                          *\n";
         $code .= "************************************************************/\n";
         $code .= "\n";
-        $code .=  "    while ( db_next_id('{menu}_mid') < 2 ) {}\n\n";
+        $code .=  "    while ( db_next_id('{menu}_mid') < 2) {}\n\n";
 
         $code .= "    // first the primary links\n";
-        $code .= "    ${profile_name}_profile_install_menu(2, " . profile_generator_serialize(profile_generator_walk_menu(2)) . ");\n";
+        $code .= "    ${profile_name}_profile_install_menu(2, ". profile_generator_serialize(profile_generator_walk_menu(2)) . ");\n";
 
-        $code .= "    ${profile_name}_profile_install_menu(0, " . profile_generator_serialize(profile_generator_walk_menu(0, array(1, 2))) . ");\n";
+        $code .= "    ${profile_name}_profile_install_menu(0, ". profile_generator_serialize(profile_generator_walk_menu(0, array(1, 2))) .");\n";
         $code .= "\n";
     }
 
-    if ( $form_values['export_aliases'] ) {
+    if ($form_values['export_aliases']) {
         $code .= "/************************************************************\n";
         $code .= "*                         URL ALIASES                       *\n";
         $code .= "************************************************************/\n";
@@ -276,46 +276,46 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= profile_generator_generate_inserts('url_alias', db_query('SELECT src,dst FROM {url_alias}'));
     }
 
-    if ( $form_values['export_blocks'] ) {
+    if ($form_values['export_blocks']) {
         $code .= "/************************************************************\n";
         $code .= "*                           BLOCKS                          *\n";
         $code .= "************************************************************/\n";
         $code .= "\n";
         $query_result = db_query('SELECT * FROM {blocks}');
         $block_fields = array('module', 'delta', 'theme', 'status', 'weight', 'region', 'custom', 'throttle', 'visibility', 'pages', 'title');
-        while ( $block = db_fetch_object($query_result) ) {
+        while ($block = db_fetch_object($query_result)) {
             $code .= "    db_query(\n";
             $code .= "        \"INSERT INTO {blocks} (module,delta,theme,status,weight,region,custom,throttle,visibility,pages,title)\n";
             $code .= "        VALUES ('%s', '%s', '%s', %d, %d, '%s', %d, %d, %d, '%s', '%s')\",\n";
             $params = array();
-            foreach ( $block_fields as $field ) {
-                if ( $block->module == 'menu' && $field == 'delta') {
-                    $params[] = "\$menu[" . profile_generator_serialize($block->$field) . "]";
+            foreach ($block_fields as $field) {
+                if ($block->module == 'menu' && $field == 'delta') {
+                    $params[] = "\$menu[". profile_generator_serialize($block->$field) ."]";
                 }
                 else {
                     $params[] = profile_generator_serialize($block->$field);
                 }
             }
-            $code .= "        " . join(',', $params) . "\n";
+            $code .= "        ". join(', ', $params) ."\n";
             $code .= "    );\n";
 
-            if ( $block->module == 'block' ) {
+            if ($block->module == 'block') {
                 $code .= "    db_query(\"INSERT INTO {boxes} (bid, body, info, format) VALUES (%d, '%s', '%s', '%s')\",\n";
                 $box = db_fetch_object(db_query('SELECT * FROM {boxes} WHERE bid=%d', $block->delta));
-                $code .= "        " . profile_generator_serialize($box->bid) . ",\n";
-                $code .= "        " . profile_generator_serialize($box->body) . ",\n";
-                $code .= "        " . profile_generator_serialize($box->info) . ",\n";
-                $code .= "        " . profile_generator_serialize($box->format) . "\n";
+                $code .= "        ". profile_generator_serialize($box->bid) .",\n";
+                $code .= "        ". profile_generator_serialize($box->body) .",\n";
+                $code .= "        ". profile_generator_serialize($box->info) .",\n";
+                $code .= "        ". profile_generator_serialize($box->format) ."\n";
                 $code .= "    );\n";
             }
         }
         $query_result = db_query('SELECT * FROM {blocks_roles} INNER JOIN {role} ON {role}.rid={blocks_roles}.rid');
-        while ( $block_role = db_fetch_object($query_result) ) {
+        while ($block_role = db_fetch_object($query_result)) {
             $code .= "    db_query(\n";
             $code .= "        \"INSERT INTO {blocks_roles} (module,delta,rid) VALUES ('%s', '%s', %d)\",\n";
-            $code .= "        " . profile_generator_serialize($block_role->module) . ", ";
+            $code .= "        ". profile_generator_serialize($block_role->module) .", ";
             $code .= profile_generator_serialize($block_role->delta) . ", ";
-            $code .= "\$role_id[" . profile_generator_serialize($block_role->name) . "]\n";
+            $code .= "\$role_id[". profile_generator_serialize($block_role->name) ."]\n";
             $code .= "    );\n";
         }
         $code .= "\n";
@@ -327,9 +327,9 @@ function profile_generator_form_submit($form_name, $form_values) {
     $code .= "    return;\n";
     $code .= "}\n\n";
 
-    if ( $form_values['export_menus'] ) {
+    if ($form_values['export_menus']) {
         $code .= "function ${profile_name}_profile_install_menu(\$pid, \$menu) {\n";
-        $code .= "    foreach ( \$menu as \$item ) {\n";
+        $code .= "    foreach ( \$menu as \$item) {\n";
         $code .= "        \$mid = db_next_id('{menu}_mid');\n";
         $code .= "        db_query(\"INSERT INTO {menu} (mid, pid, path, title, description, weight, type) VALUES (%d,%d,'%s','%s','%s', %d, %d)\",\n";
         $code .= "                 \$mid, \$pid, \$item['path'], \$item['title'], \$item['description'], \$item['weight'], \$item['type']);\n";
@@ -340,7 +340,7 @@ function profile_generator_form_submit($form_name, $form_values) {
 
     $code .= "?>\n";
 
-    if ( $form_values['op'] == t('Download') ) {
+    if ($form_values['op'] == t('Download')) {
         header('Content-type: text/plain');
         header('Content-Disposition: attachment; filename="' . $profile_name . '.profile"');
         echo $code;
@@ -360,8 +360,8 @@ function profile_generator_export_nodes($form_values) {
     $output .= "************************************************************/\n";
 
     $query_result = db_query('SELECT * FROM {node_type}');
-    while ( $nodetype = db_fetch_object($query_result) ) {
-        if ( $nodetype->custom && $form_values['node_' . $nodetype->type] ) {
+    while ($nodetype = db_fetch_object($query_result)) {
+        if ($nodetype->custom && $form_values['node_' . $nodetype->type]) {
             $output .= "    // exporting nodes of type: " . $nodetype->name . "\n";
             $output .= profile_generator_generate_inserts('node', db_query("SELECT * FROM {node} WHERE type='%s'", $nodetype->type));
             $output .= profile_generator_generate_inserts('node_revisions', db_query("SELECT {node_revisions}.* FROM {node_revisions} INNER JOIN {node} ON {node_revisions}.nid = {node}.nid  WHERE {node}.type='%s'", $nodetype->type));
@@ -372,7 +372,7 @@ function profile_generator_export_nodes($form_values) {
 
 function profile_generator_generate_inserts($table, $result, $spaces = 4) {
     $output = '';
-    while ( $row = db_fetch_array($result) ) {
+    while ($row = db_fetch_array($result)) {
         $output .= profile_generator_generate_insert($table, $row, $spaces) . "\n";
     }
     return $output;
@@ -386,7 +386,7 @@ function profile_generator_generate_insert($table, $data, $spaces = 4) {
     $query .= join(',',array_pad(array(), count($data), "'%s'"));
     $query .= ")\",\n";
     $params = array();
-    foreach ( $data as $value ) {
+    foreach ($data as $value) {
         $params[] = profile_generator_serialize($value);
     }
     $query .= $spaces . '    ' . join(',', $params) . "\n";
@@ -398,9 +398,9 @@ function profile_generator_walk_menu($parent_id, $skip_mids = array()) {
     $menu = array();
 
     $query_result = db_query('SELECT * FROM {menu} WHERE pid=%d', $parent_id);
-    while ( $item = db_fetch_object($query_result) ) {
+    while ($item = db_fetch_object($query_result)) {
         $item = (array) $item;
-        if ( in_array($item['mid'], $skip_mids) ) {
+        if ( in_array($item['mid'], $skip_mids)) {
             continue;
         }
         $item['children'] = profile_generator_walk_menu($item['mid']);
@@ -416,8 +416,8 @@ function profile_generator_module_list() {
     $modules = array();
     $module_cache = module_rebuild_cache();
 
-    foreach ( $module_cache as $module ) {
-        if ( ! $module->status ) {
+    foreach ($module_cache as $module) {
+        if ( ! $module->status) {
             continue;
         }
 
@@ -427,12 +427,12 @@ function profile_generator_module_list() {
         );
     }
     
-    for ( $i = 0; $i < count($modules); $i++ ) {
-        for ( $j = 0; $j < count($modules) - 1; $j++ ) {
-            if ( $i == $j ) {
+    for ( $i = 0; $i < count($modules); $i++) {
+        for ( $j = 0; $j < count($modules) - 1; $j++) {
+            if ($i == $j) {
                 continue;
             }
-            if ( in_array($modules[$i]['name'], $modules[$j]['deps']) ) {
+            if ( in_array($modules[$i]['name'], $modules[$j]['deps'])) {
                 $tmp = $modules[$j];
                 $modules[$j] = $modules[$i];
                 $modules[$i] = $tmp;
@@ -446,11 +446,11 @@ function profile_generator_module_list() {
 function profile_generator_module_dependencies($module_list, $module) {
     $deps = $module_list[$module]->info['dependencies'];
 
-    if ( !is_array($deps) ) {
+    if ( !is_array($deps)) {
         $deps = array();
     }
 
-    foreach ( $deps as $dep ) {
+    foreach ($deps as $dep) {
         $deps = array_merge($deps, profile_generator_module_dependencies($module_list, $dep));
     }
 
