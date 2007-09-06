@@ -4,16 +4,16 @@
 /**
 Implementation of hook_perm()
 */
-function profile_generator_perm() { # {{{
+function profile_generator_perm() {
     return array(
         'profile_generator generate',
     );
-} # }}}
+}
 
 /**
 Implementation of hook_menu();
 */
-function profile_generator_menu() { # {{{
+function profile_generator_menu() {
     $items = array();
 
     $items[] = array(
@@ -27,9 +27,9 @@ function profile_generator_menu() { # {{{
     );
 
     return $items;
-} # }}}
+}
 
-function profile_generator_form($form_values = null) { # {{{
+function profile_generator_form($form_values = null) {
     $form['title'] = array(
         '#type' => 'textfield',
         '#title' => t('Profile Title'),
@@ -119,13 +119,13 @@ function profile_generator_form($form_values = null) { # {{{
     );
 
     return $form;
-} # }}}
+}
 
-function profile_generator_serialize($var, $spaces = 4) { # {{{
+function profile_generator_serialize($var, $spaces = 4) {
     return trim(preg_replace('/^/ms', str_repeat(' ', $spaces), var_export($var, true)));
-} # }}}
+}
 
-function profile_generator_form_submit($form_name, $form_values) {   # {{{
+function profile_generator_form_submit($form_name, $form_values) {  
     $profile_name = $form_values['name'];
 
     $modules = profile_generator_module_list();
@@ -350,9 +350,9 @@ function profile_generator_form_submit($form_name, $form_values) {   # {{{
     }
 
     return;
-} # }}}
+}
 
-function profile_generator_export_nodes($form_values) { # {{{
+function profile_generator_export_nodes($form_values) {
     
     $output = '';
     $output .= "/************************************************************\n";
@@ -368,17 +368,17 @@ function profile_generator_export_nodes($form_values) { # {{{
         }
     }
     return $output;
-} # }}}
+}
 
-function profile_generator_generate_inserts($table, $result, $spaces = 4) { # {{{
+function profile_generator_generate_inserts($table, $result, $spaces = 4) {
     $output = '';
     while ( $row = db_fetch_array($result) ) {
         $output .= profile_generator_generate_insert($table, $row, $spaces) . "\n";
     }
     return $output;
-} # }}}
+}
 
-function profile_generator_generate_insert($table, $data, $spaces = 4) { # {{{
+function profile_generator_generate_insert($table, $data, $spaces = 4) {
     $spaces = str_repeat(' ', $spaces);
     $query = $spaces . "db_query(\n${spaces}    \"INSERT INTO {" . $table . "} (";
     $query .= join(',',array_keys($data));
@@ -392,9 +392,9 @@ function profile_generator_generate_insert($table, $data, $spaces = 4) { # {{{
     $query .= $spaces . '    ' . join(',', $params) . "\n";
     $query .= $spaces . ');';
     return $query;
-} # }}}
+}
 
-function profile_generator_walk_menu($parent_id, $skip_mids = array()) { # {{{
+function profile_generator_walk_menu($parent_id, $skip_mids = array()) {
     $menu = array();
 
     $query_result = db_query('SELECT * FROM {menu} WHERE pid=%d', $parent_id);
@@ -410,9 +410,9 @@ function profile_generator_walk_menu($parent_id, $skip_mids = array()) { # {{{
     }
 
     return $menu;
-} # }}}
+}
 
-function profile_generator_module_list() { # {{{
+function profile_generator_module_list() {
     $modules = array();
     $module_cache = module_rebuild_cache();
 
@@ -441,9 +441,9 @@ function profile_generator_module_list() { # {{{
     }
 
     return array_map(create_function('$a', 'return $a["name"];'), $modules);
-} # }}}
+}
 
-function profile_generator_module_dependencies($module_list, $module) { # {{{
+function profile_generator_module_dependencies($module_list, $module) {
     $deps = $module_list[$module]->info['dependencies'];
 
     if ( !is_array($deps) ) {
@@ -455,4 +455,4 @@ function profile_generator_module_dependencies($module_list, $module) { # {{{
     }
 
     return $deps;
-} # }}}
+}
