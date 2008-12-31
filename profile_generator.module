@@ -16,21 +16,20 @@ Implementation of hook_menu();
 function profile_generator_menu() {
     $items = array();
 
-    $items[] = array(
-        'path' => 'admin/settings/profile-generator',
-        'title' => t('Generate installation profile'),
-        'description' => t('Generate a Drupal installation profile'),
-        'callback' => 'drupal_get_form',
-        'callback arguments' => 'profile_generator_form',
-        'access' => user_access('profile_generator generate'),
+  $items['admin/settings/profile-generator'] = array(
+        'title' => 'Generate installation profile',
+        'description' => 'Generate a Drupal installation profile',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('profile_generator_form'),
+        'access arguments' => array('profile_generator generate'),
         'type' => MENU_NORMAL_ITEM,
     );
 
     return $items;
 }
 
-function profile_generator_form($form_values = null) {
-    $form['title'] = array(
+function profile_generator_form() {
+     $form['title'] = array(
         '#type' => 'textfield',
         '#title' => t('Profile Title'),
         '#required' => TRUE,
@@ -125,14 +124,15 @@ function profile_generator_serialize($var, $spaces = 4) {
     return trim(preg_replace('/^/ms', str_repeat(' ', $spaces), var_export($var, true)));
 }
 
-function profile_generator_form_submit($form_name, $form_values) {  
-    $profile_name = $form_values['name'];
+
+function profile_generator_form_submit($form, &$form_state) {
+   $profile_name = $form_state['values']['name'];
 
     $modules = profile_generator_module_list();
 
     $details = array(
-        'name' => $form_values['title'],
-        'description' => $form_values['description'],
+                      'name' => $form_state['values']['title'],
+                      'description' => $form_state['values']['description'],
     );
 
     $postcode = '';
@@ -186,7 +186,7 @@ function profile_generator_form_submit($form_name, $form_values) {
     $code .= "\n";
 
     // node types
-    if ($form_values['export_nodetypes']) {
+  if ($form_state['values']['export_nodetypes']) {
         $code .= "/************************************************************\n";
         $code .= "*                         NODE TYPES                        *\n";
         $code .= "************************************************************/\n";
@@ -205,7 +205,7 @@ function profile_generator_form_submit($form_name, $form_values) {
     }
 
     // roles
-    if ($form_values['export_roles']) {
+  if ($form_state['values']['export_roles']) {
         $code .= "/************************************************************\n";
         $code .= "*                            ROLES                          *\n";
         $code .= "************************************************************/\n";
@@ -225,7 +225,7 @@ function profile_generator_form_submit($form_name, $form_values) {
     }
 
     // users
-    if ($form_values['export_users']) {
+  if ($form_state['values']['export_users']) {
         $code .= "/************************************************************\n";
         $code .= "*                            USERS                          *\n";
         $code .= "************************************************************/\n";
@@ -243,7 +243,7 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= "\n";
     }
 
-    if ($form_values['export_users'] && $form_values['export_roles']) {
+  if ($form_state['values']['export_users'] && $form_state['values']['export_roles']) {
         $code .= "/************************************************************\n";
         $code .= "*                   USERS <=> ROLES MAPPING                 *\n";
         $code .= "************************************************************/\n";
@@ -253,8 +253,7 @@ function profile_generator_form_submit($form_name, $form_values) {
         }
         $code .= "\n";
     }
-
-    if ($form_values['export_menus']) {
+  if ($form_state['values']['export_menus']) {
         $code .= "/************************************************************\n";
         $code .= "*                            MENUS                          *\n";
         $code .= "************************************************************/\n";
@@ -268,7 +267,7 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= "\n";
     }
 
-    if ($form_values['export_aliases']) {
+  if ($form_state['values']['export_aliases']) {
         $code .= "/************************************************************\n";
         $code .= "*                         URL ALIASES                       *\n";
         $code .= "************************************************************/\n";
@@ -276,7 +275,7 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= profile_generator_generate_inserts('url_alias', db_query('SELECT src,dst FROM {url_alias}'));
     }
 
-    if ($form_values['export_blocks']) {
+  if ($form_state['values']['export_blocks']) {
         $code .= "/************************************************************\n";
         $code .= "*                           BLOCKS                          *\n";
         $code .= "************************************************************/\n";
@@ -321,13 +320,13 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= "\n";
     }
 
-    $code .= profile_generator_export_nodes($form_values);
+  $code .= profile_generator_export_nodes($form_state['values']);
 
     $code .= "\n$postcode\n";
     $code .= "    return;\n";
     $code .= "}\n\n";
 
-    if ($form_values['export_menus']) {
+  if ($form_state['values']['export_menus']) {
         $code .= "function ${profile_name}_profile_install_menu(\$pid, \$menu) {\n";
         $code .= "    foreach ( \$menu as \$item) {\n";
         $code .= "        \$mid = db_next_id('{menu}_mid');\n";
@@ -340,7 +339,7 @@ function profile_generator_form_submit($form_name, $form_values) {
 
     $code .= "?>\n";
 
-    if ($form_values['op'] == t('Download')) {
+  if ($form_state['values']['op'] == t('Download')) {
         header('Content-type: text/plain');
         header('Content-Disposition: attachment; filename="' . $profile_name . '.profile"');
         echo $code;
