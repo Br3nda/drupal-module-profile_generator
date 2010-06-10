@@ -81,6 +81,12 @@ function profile_generator_form($form_values = null) {
         '#default_value' => TRUE,
         '#weight' => 7,
     );
+    $form['export_views'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Export views'),
+        '#default_value' => TRUE,
+        '#weight' => 8,
+    );	
     $form['export_aliases'] = array(
         '#type' => 'checkbox',
         '#title' => t('Export URL aliases'),
@@ -276,6 +282,26 @@ function profile_generator_form_submit($form_name, $form_values) {
         $code .= "\n";
         $code .= profile_generator_generate_inserts('url_alias', db_query('SELECT src,dst FROM {url_alias}'));
     }
+	
+/**
+*** Add views Functionality to Profile Generator.
+**/
+
+    if ($form_values['export_views']) {
+      $code .= "/*************************************************** \n";
+      $code .= "*                         VIEWS                    * \n";
+      $code .= "****************************************************/ \n";
+      $code .= "\n";
+      $code .= profile_generator_generate_inserts('view_argument', db_query('SELECT vid, type, argdefault, title, options, position, wildcard, wildcard_substitution FROM {view_argument}'));
+      $code .= profile_generator_generate_inserts('view_exposed_filter', db_query('SELECT vid, field, label, optional, is_default, operator, single, position FROM {view_exposed_filter}'));
+      $code .= profile_generator_generate_inserts('view_filter', db_query('SELECT vid, tablename, field, value, operator, options, position FROM {view_filter}'));
+      $code .= profile_generator_generate_inserts('view_sort', db_query('SELECT vid, position, field, sortorder, options, tablename FROM {view_sort}'));	  
+      $code .= profile_generator_generate_inserts('view_tablefield', db_query('SELECT vid, tablename, field, label, handler, sortable, defaultsort, options, position FROM {view_tablefield}'));	  	  
+      $code .= profile_generator_generate_inserts('view_view', db_query('SELECT vid, name, description, access, page, page_title, page_header, page_header_format, page_empty, page_empty_format, page_footer, page_footer_format, page_type, use_pager, nodes_per_page, url, menu, menu_tab, menu_tab_weight, menu_title, menu_tab_default, menu_tab_default_parent_type, menu_parent_title, menu_parent_tab_weight, block, block_title, block_use_page_header, block_header, block_header_format, block_use_page_footer, block_footer, block_footer_format, block_use_page_empty, block_empty, block_empty_format, block_type, nodes_per_block, block_more, breadcrumb_no_home, changed, view_args_php, is_cacheable FROM {view_view}'));
+	}
+  
+  
+  	
 
     if ($form_values['export_blocks']) {
         $code .= "/************************************************************\n";
